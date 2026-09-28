@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Light is the default; dark follows the OS unless the viewer
+ * picks a theme (html[data-theme]). Chart series colors are a validated
+ * CVD-safe categorical order (see README > Design).
+ */
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f8f9fa;
+  --line: #e2e5ea;
+  --line-strong: #cfd4dc;
+  --ink: #14171c;
+  --ink-2: #434a55;
+  --ink-3: #626a76;
+  --accent: #1d4f91;
+  --accent-ink: #ffffff;
+  --accent-soft: #e9eff8;
+  --focus: #2f6bc0;
+
+  --nav-bg: #16181c;
+  --nav-line: #26292f;
+  --nav-ink: #b9bdc5;
+  --nav-ink-strong: #ffffff;
+  --nav-active: #262a31;
+
+  --good: #1b7340;
+  --good-soft: #e7f3ec;
+  --warn: #8a5800;
+  --warn-soft: #fcf2dc;
+  --bad: #b42318;
+  --bad-soft: #fcebea;
+  --neutral: #4b5260;
+  --neutral-soft: #eef0f3;
+
+  --series-1: #256abf;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --grid: #eceef1;
+  --axis: #c9ced6;
+
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111214;
+    --surface: #1a1b1e;
+    --surface-2: #202226;
+    --line: #2c2f34;
+    --line-strong: #3a3e45;
+    --ink: #ececee;
+    --ink-2: #b8bcc4;
+    --ink-3: #8f959f;
+    --accent: #7aa7e3;
+    --accent-ink: #0d1117;
+    --accent-soft: #1b2839;
+    --focus: #7aa7e3;
+    --nav-bg: #0c0d0f;
+    --nav-line: #1d1f23;
+    --nav-active: #1f2227;
+    --good: #58c282;
+    --good-soft: #15281d;
+    --warn: #e2aa45;
+    --warn-soft: #2e2413;
+    --bad: #f0776d;
+    --bad-soft: #341a1a;
+    --neutral: #b8bcc4;
+    --neutral-soft: #25272b;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --grid: #25282c;
+    --axis: #3a3e45;
+    --shadow: none;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111214;
+  --surface: #1a1b1e;
+  --surface-2: #202226;
+  --line: #2c2f34;
+  --line-strong: #3a3e45;
+  --ink: #ececee;
+  --ink-2: #b8bcc4;
+  --ink-3: #8f959f;
+  --accent: #7aa7e3;
+  --accent-ink: #0d1117;
+  --accent-soft: #1b2839;
+  --focus: #7aa7e3;
+  --nav-bg: #0c0d0f;
+  --nav-line: #1d1f23;
+  --nav-active: #1f2227;
+  --good: #58c282;
+  --good-soft: #15281d;
+  --warn: #e2aa45;
+  --warn-soft: #2e2413;
+  --bad: #f0776d;
+  --bad-soft: #341a1a;
+  --neutral: #b8bcc4;
+  --neutral-soft: #25272b;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --grid: #25282c;
+  --axis: #3a3e45;
+  --shadow: none;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-nav: var(--nav-bg);
+  --color-nav-line: var(--nav-line);
+  --color-nav-ink: var(--nav-ink);
+  --color-nav-ink-strong: var(--nav-ink-strong);
+  --color-nav-active: var(--nav-active);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --shadow-card: var(--shadow);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pulse-soft {
+  50% {
+    opacity: 0.55;
+  }
+}
+.skeleton {
+  background: var(--surface-2);
+  border-radius: 4px;
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
