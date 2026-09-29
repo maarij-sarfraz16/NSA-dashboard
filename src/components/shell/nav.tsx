@@ -7,21 +7,13 @@ import type { Section } from "@/lib/auth/session-token";
 
 type Item = { href: string; label: string; section?: Section };
 
-const GROUPS: { items: Item[] }[] = [
-  { items: [{ href: "/", label: "Overview" }] },
-  {
-    items: [
-      { href: "/sales", label: "Sales", section: "sales" },
-      { href: "/purchase", label: "Purchase", section: "purchase" },
-      { href: "/manufacturing", label: "Manufacturing", section: "manufacturing" },
-    ],
-  },
-  {
-    items: [
-      { href: "/attendance", label: "Attendance", section: "attendance" },
-      { href: "/payroll", label: "Payroll", section: "payroll" },
-    ],
-  },
+const ITEMS: Item[] = [
+  { href: "/", label: "Overview" },
+  { href: "/sales", label: "Sales", section: "sales" },
+  { href: "/purchase", label: "Purchase", section: "purchase" },
+  { href: "/manufacturing", label: "Manufacturing", section: "manufacturing" },
+  { href: "/attendance", label: "Attendance", section: "attendance" },
+  { href: "/payroll", label: "Payroll", section: "payroll" },
 ];
 
 function NavLinks({ sections, onNavigate }: { sections: Section[]; onNavigate?: () => void }) {
@@ -30,36 +22,28 @@ function NavLinks({ sections, onNavigate }: { sections: Section[]; onNavigate?: 
   const suffix = company ? `?company=${encodeURIComponent(company)}` : "";
 
   return (
-    <nav aria-label="Main" className="space-y-0.5">
-      {GROUPS.map((g, gi) => {
-        const items = g.items.filter((i) => !i.section || sections.includes(i.section));
-        if (items.length === 0) return null;
-        return (
-          <div key={gi}>
-            <ul className="space-y-0.5">
-              {items.map((item) => {
-                const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={`${item.href}${suffix}`}
-                      onClick={onNavigate}
-                      aria-current={active ? "page" : undefined}
-                      className={`relative block rounded px-3 py-1.5 text-[13.5px] transition-colors ${
-                        active
-                          ? "bg-nav-active font-medium text-nav-ink-strong before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-[#4f86d1]"
-                          : "text-nav-ink hover:bg-nav-active/60 hover:text-nav-ink-strong"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        );
-      })}
+    <nav aria-label="Main">
+      <ul className="space-y-1.5">
+        {ITEMS.filter((i) => !i.section || sections.includes(i.section)).map((item) => {
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          return (
+            <li key={item.href}>
+              <Link
+                href={`${item.href}${suffix}`}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                className={`relative block rounded-md px-3 py-2 text-[14px] transition-colors ${
+                  active
+                    ? "bg-nav-active font-medium text-nav-ink-strong before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-[#4f86d1]"
+                    : "text-nav-ink hover:bg-nav-active/60 hover:text-nav-ink-strong"
+                }`}
+              >
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 }
@@ -103,7 +87,7 @@ export function Sidebar({ sections, footer }: { sections: Section[]; footer: Rea
           <Logo />
           <p className="mt-3 text-[12px] font-medium tracking-[0.02em] text-nav-ink">Management dashboard</p>
         </div>
-        <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="flex-1 overflow-y-auto px-3 py-4">
           <NavLinks sections={sections} />
         </div>
         <div className="border-t border-nav-line px-4 py-4">{footer}</div>
