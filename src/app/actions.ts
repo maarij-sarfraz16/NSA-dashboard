@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginError, loginWithErp } from "@/lib/auth/erp-login";
 import { endSession, startSession } from "@/lib/auth/session";
@@ -32,4 +33,10 @@ export async function signIn(_prev: LoginState, form: FormData): Promise<LoginSt
 export async function signOut() {
   await endSession();
   redirect("/login");
+}
+
+/** Theme switch that also works before/without client JS: saves the cookie, the root layout re-renders. */
+export async function setTheme(value: "light" | "dark") {
+  const theme = value === "dark" ? "dark" : "light";
+  (await cookies()).set("theme", theme, { path: "/", maxAge: 31536000, sameSite: "lax" });
 }

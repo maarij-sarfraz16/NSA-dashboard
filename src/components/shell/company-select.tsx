@@ -20,6 +20,7 @@ export function CompanySelect({ companies, current }: { companies: string[]; cur
         disabled={pending}
         onChange={(e) => {
           // switching company resets section filters and pagination
+          document.cookie = `company=${encodeURIComponent(e.target.value)}; path=/; max-age=31536000; samesite=lax`;
           const qs = new URLSearchParams();
           qs.set("company", e.target.value);
           const period = searchParams.get("period");

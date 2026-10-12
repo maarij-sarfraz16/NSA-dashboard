@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySession } from "@/lib/auth/session-token";
+import { COMPANY_COOKIE, SESSION_COOKIE, verifySession } from "@/lib/auth/session-token";
 
 /** Redirects anyone without a valid dashboard session to the sign-in page. */
 export async function proxy(request: NextRequest) {
@@ -12,8 +12,12 @@ export async function proxy(request: NextRequest) {
       request.method === "GET" && request.headers.get("sec-fetch-dest") === "document" && !request.headers.has("rsc");
     if (isDocumentLoad && request.nextUrl.search) {
       const url = request.nextUrl.clone();
+      const company = url.searchParams.get("company");
       url.search = "";
-      return NextResponse.redirect(url);
+      const res = NextResponse.redirect(url);
+      // a hard navigation must not silently fall back to the group view: keep the chosen company
+      if (company) res.cookies.set(COMPANY_COOKIE, company, { path: "/", maxAge: 31536000, sameSite: "lax" });
+      return res;
     }
     return NextResponse.next();
   }

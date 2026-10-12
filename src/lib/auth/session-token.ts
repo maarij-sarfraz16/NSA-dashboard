@@ -5,6 +5,8 @@
  */
 
 export const SESSION_COOKIE = "nsa_dash_session";
+/** The company the viewer last picked; used when the URL carries no ?company=. */
+export const COMPANY_COOKIE = "company";
 
 export const SECTIONS = ["sales", "purchase", "manufacturing", "attendance", "payroll", "assets"] as const;
 export type Section = (typeof SECTIONS)[number];

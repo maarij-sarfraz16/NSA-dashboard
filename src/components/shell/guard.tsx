@@ -1,6 +1,7 @@
+import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { canView, requireSession } from "@/lib/auth/session";
-import type { Section, Session } from "@/lib/auth/session-token";
+import { COMPANY_COOKIE, type Section, type Session } from "@/lib/auth/session-token";
 import { attempt } from "@/lib/data/shared";
 import { getScope, param, type Scope, type SearchParams } from "@/lib/data/scope";
 import { resolvePeriod, PERIOD_OPTIONS, type Period } from "@/lib/period";
@@ -33,7 +34,8 @@ export async function guardPage(title: string, section: Section | null, sp: Sear
     };
   }
   const result = await attempt(async () => {
-    const scope = await getScope(param(sp, "company"));
+    const saved = (await cookies()).get(COMPANY_COOKIE)?.value;
+    const scope = await getScope(param(sp, "company") ?? saved);
     const period = await resolvePeriod(
       { period: param(sp, "period"), from: param(sp, "from"), to: param(sp, "to") },
       scope.today,
