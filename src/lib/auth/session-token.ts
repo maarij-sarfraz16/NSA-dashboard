@@ -6,8 +6,15 @@
 
 export const SESSION_COOKIE = "nsa_dash_session";
 
-export const SECTIONS = ["sales", "purchase", "manufacturing", "attendance", "payroll"] as const;
+export const SECTIONS = ["sales", "purchase", "manufacturing", "attendance", "payroll", "assets"] as const;
 export type Section = (typeof SECTIONS)[number];
+
+/** The only ERPNext users allowed to sign in (compared case-insensitively). */
+export const ALLOWED_USERS = ["administrator", "saadsohail@nsagroup.com.pk"];
+
+export function isAllowedUser(user: string): boolean {
+  return ALLOWED_USERS.includes(user.trim().toLowerCase());
+}
 
 export type Session = {
   /** ERPNext user id (email) */
@@ -59,6 +66,7 @@ export async function verifySession(token: string | undefined, secret: string): 
     const session = JSON.parse(new TextDecoder().decode(fromB64url(payload))) as Session;
     if (typeof session.exp !== "number" || session.exp * 1000 < Date.now()) return null;
     if (!Array.isArray(session.sections) || typeof session.user !== "string") return null;
+    if (!isAllowedUser(session.user)) return null;
     session.sections = session.sections.filter((s): s is Section => SECTIONS.includes(s));
     return session;
   } catch {

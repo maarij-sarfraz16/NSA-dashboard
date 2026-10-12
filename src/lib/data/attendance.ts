@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { addDays, daysBetween } from "@/lib/erp/context";
+import { addDays, daysBetween, companyFilter } from "@/lib/erp/context";
 import { aggField, bool, count, getList, num, searchFilters, str, type Filter } from "@/lib/erp/query";
 import { PAGE_SIZE, type Page } from "./shared";
 
@@ -32,7 +32,7 @@ async function activeEmployees(company: string): Promise<Employee[]> {
     "Employee",
     {
       fields: ["name", "employee_name", "department", "default_shift"],
-      filters: [["company", "=", company], ["status", "=", "Active"]],
+      filters: [companyFilter(company), ["status", "=", "Active"]],
       orderBy: "employee_name asc",
       limit: 0,
     },
@@ -69,7 +69,7 @@ async function shiftAssignments(company: string, date: string): Promise<Map<stri
     {
       fields: ["employee", "shift_type"],
       filters: [
-        ["company", "=", company],
+        companyFilter(company),
         ["docstatus", "=", 1],
         ["status", "=", "Active"],
         ["start_date", "<=", date],
@@ -103,7 +103,7 @@ export const getAttendanceDay = cache(async function getAttendanceDay(
   date: string,
   shift?: string,
 ) {
-  const base: Filter[] = [["company", "=", company], ["attendance_date", "=", date]];
+  const base: Filter[] = [companyFilter(company), ["attendance_date", "=", date]];
   if (shift) base.push(["shift", "=", shift]);
   const [allEmployees, assigned, records, drafts] = await Promise.all([
     activeEmployees(company),
@@ -253,7 +253,7 @@ export type AttendanceQuery = {
 };
 
 function queryFilters(a: AttendanceQuery, docstatus = 1) {
-  const filters: Filter[] = [["company", "=", a.company], ["docstatus", "=", docstatus]];
+  const filters: Filter[] = [companyFilter(a.company), ["docstatus", "=", docstatus]];
   if (a.from && a.to) {
     filters.push(a.from === a.to ? ["attendance_date", "=", a.from] : ["attendance_date", "between", [a.from, a.to]]);
   }
@@ -375,7 +375,7 @@ export const getAttendanceDepartments = cache(async (company: string): Promise<s
     "Attendance",
     {
       fields: ["department"],
-      filters: [["company", "=", company], ["docstatus", "=", 1]],
+      filters: [companyFilter(company), ["docstatus", "=", 1]],
       groupBy: "department",
       orderBy: "department asc",
       limit: 0,
@@ -392,7 +392,7 @@ export const getLatestAttendanceDate = cache(async (company: string): Promise<st
     "Attendance",
     {
       fields: ["attendance_date"],
-      filters: [["company", "=", company], ["docstatus", "=", 1]],
+      filters: [companyFilter(company), ["docstatus", "=", 1]],
       orderBy: "attendance_date desc",
       limit: 1,
     },

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { lastMonths } from "@/lib/erp/context";
+import { lastMonths, companyFilter } from "@/lib/erp/context";
 import { aggregate, bool, count, getList, groupBy, num, searchFilters, str, type Filter } from "@/lib/erp/query";
 import type { Period } from "@/lib/period";
 import { monthlySums } from "./scope";
@@ -15,7 +15,7 @@ async function invoiced(company: string, from: string, to: string): Promise<Tota
   const r = await aggregate(
     "Sales Invoice",
     { total: "sum(base_grand_total)", count: "count(name)" },
-    [["company", "=", company], ["docstatus", "=", 1], between("posting_date", from, to)],
+    [companyFilter(company), ["docstatus", "=", 1], between("posting_date", from, to)],
     "sales invoices",
   );
   return { total: r.total, count: r.count };
@@ -25,14 +25,14 @@ async function ordersBooked(company: string, from: string, to: string): Promise<
   const r = await aggregate(
     "Sales Order",
     { total: "sum(base_grand_total)", count: "count(name)" },
-    [["company", "=", company], ["docstatus", "=", 1], between("transaction_date", from, to)],
+    [companyFilter(company), ["docstatus", "=", 1], between("transaction_date", from, to)],
     "sales orders",
   );
   return { total: r.total, count: r.count };
 }
 
 export const getSalesSummary = cache(async function getSalesSummary(company: string, period: Period, today: string) {
-  const base: Filter[] = [["company", "=", company]];
+  const base: Filter[] = [companyFilter(company)];
   const [current, previous, orders, receivables, overdue] = await Promise.all([
     invoiced(company, period.from, period.to),
     period.previous ? invoiced(company, period.previous.from, period.previous.to) : Promise.resolve(null),
@@ -54,7 +54,7 @@ export const getSalesTrend = cache(async function getSalesTrend(company: string,
     "Sales Invoice",
     "posting_date",
     "sum(base_grand_total)",
-    [["company", "=", company], ["docstatus", "=", 1]],
+    [companyFilter(company), ["docstatus", "=", 1]],
     keys,
     "monthly sales",
   );
@@ -66,7 +66,7 @@ export async function getTopCustomers(company: string, period: Period, limit = 8
     "Sales Invoice",
     "customer",
     { total: "sum(base_grand_total)", count: "count(name)" },
-    [["company", "=", company], ["docstatus", "=", 1], between("posting_date", period.from, period.to)],
+    [companyFilter(company), ["docstatus", "=", 1], between("posting_date", period.from, period.to)],
     { orderBy: "total desc", limit, what: "top customers" },
   );
   const names = await lookupNames(
@@ -104,7 +104,7 @@ export async function getSalesOrders(
   opts: { status?: string; q?: string; page: number },
   today: string,
 ): Promise<Page<SalesOrderRow>> {
-  const filters: Filter[] = [["company", "=", company]];
+  const filters: Filter[] = [companyFilter(company)];
   if (!opts.status || opts.status === "open") filters.push(["status", "in", SO_OPEN]);
   else if (opts.status !== "all" && SO_STATUSES.includes(opts.status)) filters.push(["status", "=", opts.status]);
   const or = searchFilters(opts.q, ["name", "customer", "customer_name"]);
@@ -174,7 +174,7 @@ export async function getSalesInvoices(
   company: string,
   opts: { status?: string; q?: string; page: number },
 ): Promise<Page<SalesInvoiceRow>> {
-  const filters: Filter[] = [["company", "=", company], ["docstatus", "<", 2]];
+  const filters: Filter[] = [companyFilter(company), ["docstatus", "<", 2]];
   if (!opts.status || opts.status === "unpaid") filters.push(["outstanding_amount", ">", 0], ["docstatus", "=", 1]);
   else if (opts.status !== "all" && SI_STATUSES.includes(opts.status)) filters.push(["status", "=", opts.status]);
   const or = searchFilters(opts.q, ["name", "customer", "customer_name"]);

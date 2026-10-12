@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { addDays, lastMonths } from "@/lib/erp/context";
+import { addDays, lastMonths, companyFilter } from "@/lib/erp/context";
 import { aggregate, count, getList, groupBy, num, searchFilters, str, type Filter } from "@/lib/erp/query";
 import type { Period } from "@/lib/period";
 import { monthlySums } from "./scope";
@@ -14,7 +14,7 @@ async function poBooked(company: string, from: string, to: string): Promise<Tota
   const r = await aggregate(
     "Purchase Order",
     { total: "sum(base_grand_total)", count: "count(name)" },
-    [["company", "=", company], ["docstatus", "=", 1], between("transaction_date", from, to)],
+    [companyFilter(company), ["docstatus", "=", 1], between("transaction_date", from, to)],
     "purchase orders",
   );
   return { total: r.total, count: r.count };
@@ -24,14 +24,14 @@ async function purchaseInvoiced(company: string, from: string, to: string): Prom
   const r = await aggregate(
     "Purchase Invoice",
     { total: "sum(base_grand_total)", count: "count(name)" },
-    [["company", "=", company], ["docstatus", "=", 1], between("posting_date", from, to)],
+    [companyFilter(company), ["docstatus", "=", 1], between("posting_date", from, to)],
     "purchase invoices",
   );
   return { total: r.total, count: r.count };
 }
 
 export const getPurchaseSummary = cache(async function getPurchaseSummary(company: string, period: Period, today: string) {
-  const base: Filter[] = [["company", "=", company]];
+  const base: Filter[] = [companyFilter(company)];
   const [ordered, previousOrdered, invoiced, payables, overdue, toReceive] = await Promise.all([
     poBooked(company, period.from, period.to),
     period.previous ? poBooked(company, period.previous.from, period.previous.to) : Promise.resolve(null),
@@ -57,7 +57,7 @@ export async function getPurchaseTypeSplit(company: string, period: Period) {
     "Purchase Order",
     "purchase_type",
     { total: "sum(base_grand_total)", count: "count(name)" },
-    [["company", "=", company], ["docstatus", "=", 1], between("transaction_date", period.from, period.to)],
+    [companyFilter(company), ["docstatus", "=", 1], between("transaction_date", period.from, period.to)],
     { what: "purchase type split" },
   );
   return rows.map((r) => ({ type: r.key ?? "Not set", total: r.total, count: r.count }));
@@ -70,7 +70,7 @@ export const getPurchaseTrend = cache(async function getPurchaseTrend(company: s
     "Purchase Invoice",
     "posting_date",
     "sum(base_grand_total)",
-    [["company", "=", company], ["docstatus", "=", 1]],
+    [companyFilter(company), ["docstatus", "=", 1]],
     keys,
     "monthly purchases",
   );
@@ -82,7 +82,7 @@ export async function getTopSuppliers(company: string, period: Period, limit = 8
     "Purchase Order",
     "supplier",
     { total: "sum(base_grand_total)", count: "count(name)" },
-    [["company", "=", company], ["docstatus", "=", 1], between("transaction_date", period.from, period.to)],
+    [companyFilter(company), ["docstatus", "=", 1], between("transaction_date", period.from, period.to)],
     { orderBy: "total desc", limit, what: "top suppliers" },
   );
   const names = await lookupNames(
@@ -116,7 +116,7 @@ export type LcRow = {
 };
 
 export const getLetterOfCredit = cache(async function getLetterOfCredit(company: string, today: string, withinDays = 30) {
-  const base: Filter[] = [["company", "=", company], ["docstatus", "=", 1], ["status", "in", LC_ACTIVE]];
+  const base: Filter[] = [companyFilter(company), ["docstatus", "=", 1], ["status", "in", LC_ACTIVE]];
   const [open, expiring] = await Promise.all([
     groupBy("Letter of Credit", "currency", { amount: "sum(balance_amount)", count: "count(name)" }, base, {
       what: "open letters of credit",
@@ -176,7 +176,7 @@ export async function getPurchaseOrders(
   opts: { status?: string; type?: string; q?: string; page: number },
   today: string,
 ): Promise<Page<PurchaseOrderRow>> {
-  const filters: Filter[] = [["company", "=", company]];
+  const filters: Filter[] = [companyFilter(company)];
   if (!opts.status || opts.status === "open") filters.push(["status", "in", PO_OPEN]);
   else if (opts.status !== "all" && PO_STATUSES.includes(opts.status)) filters.push(["status", "=", opts.status]);
   if (opts.type === "Local" || opts.type === "Import") filters.push(["purchase_type", "=", opts.type]);

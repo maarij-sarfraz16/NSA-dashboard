@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { addMonths, lastMonths, monthEnd } from "@/lib/erp/context";
+import { addMonths, lastMonths, monthEnd, companyFilter } from "@/lib/erp/context";
 import { count, getList, groupBy, num, searchFilters, str, type Filter } from "@/lib/erp/query";
 import type { Period } from "@/lib/period";
 import { PAGE_SIZE, type Page } from "./shared";
@@ -13,7 +13,7 @@ export const WO_STATUSES = ["Draft", "Not Started", "In Process", "Stopped", "Co
 const dayRange = (from: string, to: string): [string, string] => [`${from} 00:00:00`, `${to} 23:59:59`];
 
 export const getManufacturingSummary = cache(async function getManufacturingSummary(company: string, period: Period, now: string) {
-  const base: Filter[] = [["company", "=", company]];
+  const base: Filter[] = [companyFilter(company)];
   const [byStatus, completed, overdue] = await Promise.all([
     groupBy("Work Order", "status", { n: "count(name)" }, [...base, ["docstatus", "<", 2]], {
       what: "work orders by status",
@@ -43,7 +43,7 @@ export async function getCompletionTrend(company: string, today: string, months 
       return count(
         "Work Order",
         [
-          ["company", "=", company],
+          companyFilter(company),
           ["status", "=", "Completed"],
           ["actual_end_date", "between", dayRange(from, monthEnd(from))],
         ],
@@ -73,7 +73,7 @@ export async function getWorkOrders(
   opts: { status?: string; q?: string; page: number },
   now: string,
 ): Promise<Page<WorkOrderRow>> {
-  const filters: Filter[] = [["company", "=", company]];
+  const filters: Filter[] = [companyFilter(company)];
   if (!opts.status || opts.status === "active") filters.push(["status", "in", WO_ACTIVE]);
   else if (opts.status === "overdue") filters.push(["status", "in", WO_ACTIVE], ["planned_end_date", "<", now]);
   else if (opts.status !== "all" && WO_STATUSES.includes(opts.status)) filters.push(["status", "=", opts.status]);

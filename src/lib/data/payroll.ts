@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { lastMonths, monthEnd } from "@/lib/erp/context";
+import { lastMonths, monthEnd, companyFilter } from "@/lib/erp/context";
 import { getList, num, str, type Filter } from "@/lib/erp/query";
 import { monthlySums } from "./scope";
 import { PAGE_SIZE, type Page } from "./shared";
@@ -26,7 +26,7 @@ export const getLatestPayrollMonth = cache(async function getLatestPayrollMonth(
     "Salary Slip",
     {
       fields: ["start_date"],
-      filters: [["company", "=", company], ["docstatus", "=", 1]],
+      filters: [companyFilter(company), ["docstatus", "=", 1]],
       orderBy: "start_date desc",
       limit: 1,
     },
@@ -42,7 +42,7 @@ export const getLatestPayrollMonth = cache(async function getLatestPayrollMonth(
 export const getPayrollMonth = cache(async function getPayrollMonth(company: string, month: string) {
   const from = `${month}-01`;
   const filters: Filter[] = [
-    ["company", "=", company],
+    companyFilter(company),
     ["docstatus", "<", 2],
     ["start_date", "between", [from, monthEnd(from)]],
   ];
@@ -123,8 +123,8 @@ export function filterSlips(
 export async function getPayrollTrend(company: string, today: string, months = 12) {
   const keys = lastMonths(today, months);
   const [net, gross] = await Promise.all([
-    monthlySums("Salary Slip", "start_date", "sum(base_net_pay)", [["company", "=", company], ["docstatus", "=", 1]], keys, "monthly payroll"),
-    monthlySums("Salary Slip", "start_date", "sum(base_gross_pay)", [["company", "=", company], ["docstatus", "=", 1]], keys, "monthly payroll"),
+    monthlySums("Salary Slip", "start_date", "sum(base_net_pay)", [companyFilter(company), ["docstatus", "=", 1]], keys, "monthly payroll"),
+    monthlySums("Salary Slip", "start_date", "sum(base_gross_pay)", [companyFilter(company), ["docstatus", "=", 1]], keys, "monthly payroll"),
   ]);
   return { months: keys, net, gross };
 }

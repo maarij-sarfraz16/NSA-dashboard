@@ -14,6 +14,7 @@ const ITEMS: Item[] = [
   { href: "/manufacturing", label: "Manufacturing", section: "manufacturing" },
   { href: "/attendance", label: "Attendance", section: "attendance" },
   { href: "/payroll", label: "Payroll", section: "payroll" },
+  { href: "/assets", label: "Assets", section: "assets" },
 ];
 
 function NavLinks({ sections, onNavigate }: { sections: Section[]; onNavigate?: () => void }) {

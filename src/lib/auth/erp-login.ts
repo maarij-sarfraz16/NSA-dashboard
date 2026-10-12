@@ -2,7 +2,7 @@ import "server-only";
 
 import { erpRequest } from "@/lib/erp/client";
 import { ErpError } from "@/lib/erp/errors";
-import type { Section } from "./session-token";
+import { isAllowedUser, type Section } from "./session-token";
 
 /**
  * The ERPNext DocType a user must be able to read (per their own ERPNext role
@@ -14,6 +14,7 @@ export const SECTION_DOCTYPES: Record<Section, string> = {
   manufacturing: "Work Order",
   attendance: "Attendance",
   payroll: "Salary Slip",
+  assets: "Asset",
 };
 
 export class LoginError extends Error {}
@@ -74,6 +75,10 @@ export async function loginWithErp(usr: string, pwd: string): Promise<LoginResul
     });
     const userId = (user.json as { message?: string }).message;
     if (!userId) throw new ErpError("bad_response", "ERPNext did not return the signed-in user.");
+
+    if (!isAllowedUser(userId)) {
+      throw new LoginError("This account is not authorised to access the dashboard.");
+    }
 
     const sections: Section[] = [];
     for (const [section, doctype] of Object.entries(SECTION_DOCTYPES) as [Section, string][]) {

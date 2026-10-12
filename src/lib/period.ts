@@ -74,7 +74,8 @@ export async function resolvePeriod(
   params: { period?: string; from?: string; to?: string },
   today: string,
 ): Promise<Period> {
-  const key = (params.period ?? "mtd") as PeriodKey;
+  // default view is today; unknown values fall back to it as well
+  const key: PeriodKey = PERIOD_OPTIONS.some((o) => o.key === params.period) ? (params.period as PeriodKey) : "today";
 
   if (key === "custom" && isYmd(params.from) && isYmd(params.to)) {
     // never report beyond today; a reversed range is read the way the user meant it
@@ -134,6 +135,8 @@ export async function resolvePeriod(
         previous: { from: pFrom, to: addDays(pFrom, elapsed), label: "same point last quarter" },
       };
     }
+    case "mtd":
+      break;
     case "fytd": {
       const fy = await getFiscalYear(today);
       if (fy) {

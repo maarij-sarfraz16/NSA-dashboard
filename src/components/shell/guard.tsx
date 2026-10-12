@@ -61,7 +61,7 @@ export function periodField(period: Period, today: string): FilterField {
     kind: "period",
     name: "period",
     label: "Period",
-    defaultValue: "mtd",
+    defaultValue: "today",
     options: PERIOD_OPTIONS.map((o) => ({ value: o.key, label: o.label })),
     from: period.from,
     to: period.to,
