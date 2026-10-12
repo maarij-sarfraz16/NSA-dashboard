@@ -18,6 +18,8 @@ export type Company = {
  * Group company -> all companies rolled up into it (itself plus every descendant).
  * Filled by getCompanies(), which every request runs (via getScope) before any data query.
  */
+export const VIRTUAL_GROUP = "NSA Group";
+
 const groupMembers = new Map<string, string[]>();
 
 /**
@@ -46,8 +48,24 @@ export const getCompanies = cache(async (): Promise<Company[]> => {
     }))
     .filter((c) => c.name);
 
+  // ERPNext has no group company here (Polycam and Polymer are separate top-level
+  // companies), so add a virtual "NSA Group" that rolls up every real company.
+  const currencies = new Set(companies.map((c) => c.currency));
+  if (companies.length > 1 && !companies.some((c) => c.isGroup && !c.parent) && currencies.size === 1) {
+    companies.unshift({
+      name: VIRTUAL_GROUP,
+      abbr: null,
+      currency: companies[0].currency,
+      isGroup: true,
+      parent: null,
+    });
+  }
+
   groupMembers.clear();
+  const real = companies.filter((c) => c.name !== VIRTUAL_GROUP);
+  groupMembers.set(VIRTUAL_GROUP, real.map((c) => c.name));
   for (const c of companies) {
+    if (c.name === VIRTUAL_GROUP) continue;
     if (!c.isGroup) continue;
     const members = [c.name];
     for (let i = 0; i < members.length; i++) {
