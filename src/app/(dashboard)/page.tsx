@@ -3,21 +3,24 @@ import { Suspense, type ReactNode } from "react";
 import { ColumnChart, type ChartSeries } from "@/components/charts/column-chart";
 import { guardPage, periodField, periodSubtitle } from "@/components/shell/guard";
 import { PageBody, PageHeader } from "@/components/shell/page-header";
+import { ProductionSection, PurchasesPanel, ConsumptionPanel } from "@/components/overview/production";
 import { Filters } from "@/components/ui/filters";
 import { Kpi } from "@/components/ui/kpi";
 import { OtherCurrencies } from "@/components/ui/money";
 import { Panel } from "@/components/ui/panel";
-import { EmptyState, ErrorState, PanelSkeleton, TileSkeleton } from "@/components/ui/states";
+import { EmptyState, ErrorState, KpiSkeleton, PanelSkeleton, TileSkeleton } from "@/components/ui/states";
 import type { Section, Session } from "@/lib/auth/session-token";
 import { getAttendanceDay, NOT_MARKED } from "@/lib/data/attendance";
 import { getManufacturingSummary } from "@/lib/data/manufacturing";
 import { getLatestPayrollMonth, getPayrollMonth } from "@/lib/data/payroll";
 import { getLetterOfCredit, getPurchaseSummary, getPurchaseTrend } from "@/lib/data/purchase";
+import { resolveReportDate } from "@/lib/data/production";
 import { getSalesSummary, getSalesTrend } from "@/lib/data/sales";
-import type { Scope, SearchParams } from "@/lib/data/scope";
+import { param, type Scope, type SearchParams } from "@/lib/data/scope";
 import { attempt, splitByCurrency } from "@/lib/data/shared";
 import type { ErrorInfo } from "@/lib/erp/errors";
-import { formatMoney, formatMoneyCompact, formatMonth, formatNumber, formatPercent } from "@/lib/format";
+import { formatMoney, formatDate, formatMoneyCompact, formatMonth, formatNumber, formatPercent } from "@/lib/format";
+import { addDays } from "@/lib/erp/context";
 import type { Period } from "@/lib/period";
 
 type Props = { searchParams: Promise<SearchParams> };
@@ -28,6 +31,8 @@ export default async function OverviewPage({ searchParams }: Props) {
   if (!g.ok) return g.node;
   const { scope, period, session } = g;
   const can = (s: Section) => session.sections.includes(s);
+  const prodDate = resolveReportDate(param(sp, "date"), scope.today);
+  const yesterday = addDays(scope.today, -1);
   const q = `?company=${encodeURIComponent(scope.company.name)}`;
 
   if (session.sections.length === 0) {
@@ -49,7 +54,12 @@ export default async function OverviewPage({ searchParams }: Props) {
   return (
     <>
       <PageHeader title="Overview" subtitle={periodSubtitle(period, scope.company.name)} scope={scope}>
-        <Filters fields={[periodField(period, scope.today)]} />
+        <Filters
+          fields={[
+            periodField(period, scope.today),
+            { kind: "date", name: "date", label: "Production date", max: scope.today, defaultValue: yesterday },
+          ]}
+        />
       </PageHeader>
       <PageBody>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -92,6 +102,27 @@ export default async function OverviewPage({ searchParams }: Props) {
             <Attention scope={scope} period={period} session={session} q={q} />
           </Suspense>
         </div>
+
+        {can("manufacturing") && (
+          <>
+            <div>
+              <h2 className="text-[15px] font-semibold text-ink">Production</h2>
+              <p className="text-[12.5px] text-ink-3">
+                {prodDate === yesterday ? "Yesterday, " : prodDate === scope.today ? "Today, " : ""}
+                {formatDate(prodDate)} · production, raw material purchases and daily consumption follow the Production date
+              </p>
+            </div>
+            <Suspense key={`kpi-${scope.company.name}-${prodDate}`} fallback={<KpiSkeleton count={3} />}>
+              <ProductionSection company={scope.company.name} date={prodDate} currency={scope.company.currency} />
+            </Suspense>
+            <Suspense key={`buy-${scope.company.name}-${prodDate}`} fallback={<PanelSkeleton title="Raw material purchases" height={120} />}>
+              <PurchasesPanel company={scope.company.name} date={prodDate} currency={scope.company.currency} />
+            </Suspense>
+            <Suspense key={`use-${scope.company.name}-${prodDate}`} fallback={<PanelSkeleton title="Daily consumption" height={200} />}>
+              <ConsumptionPanel company={scope.company.name} date={prodDate} currency={scope.company.currency} />
+            </Suspense>
+          </>
+        )}
       </PageBody>
     </>
   );

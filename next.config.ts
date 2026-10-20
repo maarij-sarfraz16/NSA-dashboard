@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // the live box is opened via its LAN IP; without this `next dev` blocks its own JS/HMR for that origin
+  allowedDevOrigins: ["10.1.2.99"],
   async headers() {
     return [
       {

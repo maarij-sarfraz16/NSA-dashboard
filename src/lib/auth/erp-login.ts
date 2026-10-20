@@ -102,3 +102,60 @@ export async function loginWithErp(usr: string, pwd: string): Promise<LoginResul
     );
   }
 }
+/**
+ * AUTO-LOGIN: user ERPNext mein pehle se logged in hai (browser ki `sid` cookie).
+ * Password nahi chahiye. Sections wahi permission check se bante hain jo password
+ * login mein. Yahan ERPNext ko logout NAHI karte — wo session user ka apna hai.
+ */
+export async function loginWithErpSid(sid: string): Promise<LoginResult> {
+  if (!sid || sid === "Guest") throw new LoginError("Not signed in to ERPNext.");
+  const cookie = { Cookie: `sid=${sid}` };
+
+  let userId: string | undefined;
+  try {
+    const user = await erpRequest("/api/method/frappe.auth.get_logged_user", {}, {
+      what: "signed-in user",
+      headers: cookie,
+    });
+    userId = (user.json as { message?: string }).message;
+  } catch (err) {
+    if (err instanceof ErpError && (err.kind === "unauthorized" || err.kind === "forbidden")) {
+      throw new LoginError("ERPNext session has expired. Please sign in again.");
+    }
+    throw err;
+  }
+
+  if (!userId || userId === "Guest") throw new LoginError("Not signed in to ERPNext.");
+  if (!isAllowedUser(userId)) {
+    throw new LoginError("This account is not authorised to access the dashboard.");
+  }
+
+  let fullName = userId;
+  try {
+    const r = await erpRequest(
+      "/api/method/frappe.client.get_value",
+      { doctype: "User", filters: userId, fieldname: "full_name" },
+      { what: "user name", headers: cookie },
+    );
+    fullName = (r.json as { message?: { full_name?: string } }).message?.full_name || userId;
+  } catch {
+    // Naam na mile to email hi dikha denge
+  }
+
+  const sections: Section[] = [];
+  for (const [section, doctype] of Object.entries(SECTION_DOCTYPES) as [Section, string][]) {
+    try {
+      await erpRequest(
+        "/api/method/frappe.client.get_list",
+        { doctype, fields: ["name"], limit_page_length: 1 },
+        { what: doctype, headers: cookie },
+      );
+      sections.push(section);
+    } catch (err) {
+      if (err instanceof ErpError && err.kind === "forbidden") continue;
+      throw err;
+    }
+  }
+
+  return { user: userId, fullName, sections };
+}

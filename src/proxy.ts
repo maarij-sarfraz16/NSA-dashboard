@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { COMPANY_COOKIE, SESSION_COOKIE, verifySession } from "@/lib/auth/session-token";
 
+/** ERP auto-login ek dafa try hua, iska nishaan (loop se bachne ke liye) */
+const SSO_TRY_COOKIE = "nsa_sso_try";
+
 /** Redirects anyone without a valid dashboard session to the sign-in page. */
 export async function proxy(request: NextRequest) {
   const secret = process.env.SESSION_SECRET;
@@ -22,8 +25,22 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const url = request.nextUrl.clone();
   const next = request.nextUrl.pathname + request.nextUrl.search;
+
+  // ── ERP AUTO-LOGIN ──
+  // User ERPNext mein logged in hai (sid cookie) to password ke baghair session banwao.
+  const sid = request.cookies.get("sid")?.value;
+  const alreadyTried = request.cookies.has(SSO_TRY_COOKIE);
+  if (sid && sid !== "Guest" && !alreadyTried) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/sso/erp";
+    url.search = next && next !== "/" ? `?next=${encodeURIComponent(next)}` : "";
+    const res = NextResponse.redirect(url);
+    res.cookies.set(SSO_TRY_COOKIE, "1", { path: "/", maxAge: 30, sameSite: "lax", httpOnly: true });
+    return res;
+  }
+
+  const url = request.nextUrl.clone();
   url.pathname = "/login";
   url.search = next && next !== "/" ? `?next=${encodeURIComponent(next)}` : "";
   const res = NextResponse.redirect(url);
@@ -32,5 +49,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|_next/static|_next/image|favicon.ico|nsa-logo).*)"],
+  matcher: ["/((?!login|api/sso/erp|_next/static|_next/image|favicon.ico|nsa-logo).*)"],
 };

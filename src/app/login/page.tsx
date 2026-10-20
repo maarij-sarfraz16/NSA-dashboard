@@ -6,9 +6,17 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; sso?: string }> }) {
   if (await getSession()) redirect("/");
-  const { next } = await searchParams;
+  const { next, sso } = await searchParams;
+  const ssoNotice =
+    sso === "denied"
+      ? "This account is not authorised to access the dashboard."
+      : sso === "expired"
+        ? "The automatic sign-in link expired. Click Dashboard in ERPNext again, or sign in below."
+        : sso === "unavailable"
+          ? "Automatic sign-in is not configured on this server. Sign in below."
+          : "";
   let host = "";
   try {
     host = new URL(getConfig().erpBaseUrl).host;
@@ -31,6 +39,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             Sign in with your ERPNext account{host ? ` (${host})` : ""}. You will see the sections your ERPNext
             role allows.
           </p>
+          {ssoNotice && (
+            <p role="alert" className="mt-4 rounded border border-bad/30 bg-bad-soft px-3 py-2 text-[13px] text-bad">
+              {ssoNotice}
+            </p>
+          )}
           <LoginForm next={next ?? ""} />
         </div>
       </div>
